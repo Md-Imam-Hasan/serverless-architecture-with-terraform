@@ -6,10 +6,10 @@ module "payments_table" {
 
 # Lambda Functions
 module "create_payment_lambda" {
-  source                = "./lambda/create_payment"
-  environment           = var.environment
-  payments_table_name   = module.payments_table.table_name
-  payments_table_arn    = module.payments_table.table_arn
+  source              = "./lambda/create_payment"
+  environment         = var.environment
+  payments_table_name = module.payments_table.table_name
+  payments_table_arn  = module.payments_table.table_arn
 }
 
 # API Gateway

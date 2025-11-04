@@ -1,6 +1,6 @@
 variable "region" {
   description = "region for all environments"
-  default = "eu-west-1"
+  default     = "eu-west-1"
 }
 variable "environment" {
   type        = string

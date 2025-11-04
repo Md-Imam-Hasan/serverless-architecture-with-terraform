@@ -4,16 +4,13 @@ variable "environment" {
 }
 
 variable "api_acm_arn" {
-  type    = string
-  default = ""
+  type = string
 }
 
 variable "create_payment_lambda_name" {
-  type    = string
-  default = ""
+  type = string
 }
 
 variable "create_payment_lambda_invoke_arn" {
-  type    = string
-  default = ""
+  type = string
 }

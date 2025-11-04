@@ -7,7 +7,7 @@ resource "aws_api_gateway_rest_api" "api_gateway" {
   }
 }
 
-# Api gateway account cloudwatch log permission 
+# Api gateway account cloudwatch log permission
 resource "aws_api_gateway_account" "payment_service" {
   cloudwatch_role_arn = aws_iam_role.cloudwatch_payment_service.arn
 }
@@ -76,7 +76,7 @@ resource "aws_api_gateway_deployment" "api_gateway_deployment" {
   depends_on = [
     module.payments,
   ]
-  
+
   triggers = {
     redeployment = sha1(jsonencode([
       timestamp()
@@ -90,9 +90,9 @@ resource "aws_api_gateway_deployment" "api_gateway_deployment" {
 }
 
 resource "aws_api_gateway_stage" "api_gateway_stage" {
-  deployment_id         = aws_api_gateway_deployment.api_gateway_deployment.id
-  rest_api_id           = aws_api_gateway_rest_api.api_gateway.id
-  stage_name            = var.environment
+  deployment_id = aws_api_gateway_deployment.api_gateway_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway.id
+  stage_name    = var.environment
   # documentation_version = aws_api_gateway_documentation_version.Documentation.version
 
   depends_on = [aws_api_gateway_deployment.api_gateway_deployment]
