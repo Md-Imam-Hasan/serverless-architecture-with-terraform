@@ -1,0 +1,27 @@
+venv
+.windsurf
+*.zip
+.terraform
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/*
+.idea
+zip_files
+.terraform.tfstate.lock.info
+test.tfplan
+builds
+builds/*
+.tfplan
+*.tfvars
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
