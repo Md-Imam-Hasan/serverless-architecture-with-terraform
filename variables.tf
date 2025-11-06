@@ -4,6 +4,7 @@ variable "region" {
 }
 variable "environment" {
   type        = string
+  default     = "dev"
   description = "release environment name"
 }
 variable "account" {
