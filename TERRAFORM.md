@@ -29,6 +29,7 @@ No resources.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_account"></a> [account](#input\_account) | account ID for all environment | `map` | <pre>{<br>  "dev": "776724785158"<br>}</pre> | no |
+| <a name="input_aws_role_arn"></a> [aws\_role\_arn](#input\_aws\_role\_arn) | Role to assume for deploying resources | `string` | n/a | yes |
 | <a name="input_environment"></a> [environment](#input\_environment) | release environment name | `string` | `"dev"` | no |
 | <a name="input_region"></a> [region](#input\_region) | region for all environments | `string` | `"ap-southeast-1"` | no |
 
