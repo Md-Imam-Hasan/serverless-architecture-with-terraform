@@ -138,17 +138,28 @@ resource "aws_api_gateway_usage_plan" "payment_service" {
   ]
 }
 
-# resource "aws_api_gateway_usage_plan_key" "payment_service" {
-#   key_id        = aws_api_gateway_api_key.payment_service.id
-#   key_type      = "API_KEY"
-#   usage_plan_id = aws_api_gateway_usage_plan.payment_service.id
-#   depends_on = [
-#     aws_api_gateway_stage.api_gateway_stage,
-#     aws_api_gateway_deployment.api_gateway_deployment,
-#     aws_api_gateway_rest_api.api_gateway,
-#     aws_api_gateway_usage_plan.payment_service
-#   ]
-# }
+# API Key
+resource "aws_api_gateway_api_key" "payment_service" {
+  name    = "${var.environment}_payment_service_api_key"
+  enabled = true
+
+  tags = {
+    Name        = "${var.environment}_payment_service_api_key"
+    Environment = var.environment
+  }
+}
+
+resource "aws_api_gateway_usage_plan_key" "payment_service" {
+  key_id        = aws_api_gateway_api_key.payment_service.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.payment_service.id
+  depends_on = [
+    aws_api_gateway_stage.api_gateway_stage,
+    aws_api_gateway_deployment.api_gateway_deployment,
+    aws_api_gateway_rest_api.api_gateway,
+    aws_api_gateway_usage_plan.payment_service
+  ]
+}
 
 # Custom Domain Name
 # resource "aws_api_gateway_domain_name" "api_gateway" {

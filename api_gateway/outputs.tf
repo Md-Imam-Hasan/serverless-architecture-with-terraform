@@ -33,10 +33,16 @@ output "api_gateway_usage_plan_id" {
   value       = aws_api_gateway_usage_plan.payment_service.id
 }
 
-# output "api_gateway_api_key_id" {
-#   description = "The ID of the API Gateway API key"
-#   value       = aws_api_gateway_api_key.payment_service.id
-# }
+output "api_gateway_api_key_id" {
+  description = "The ID of the API Gateway API key"
+  value       = aws_api_gateway_api_key.payment_service.id
+}
+
+output "api_gateway_api_key_value" {
+  description = "The value of the API Gateway API key"
+  value       = aws_api_gateway_api_key.payment_service.value
+  sensitive   = true
+}
 
 # output "api_gateway_domain_name" {
 #   description = "The custom domain name for the API Gateway"
