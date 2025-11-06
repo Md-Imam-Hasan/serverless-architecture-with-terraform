@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
+from decimal import Decimal
 from uuid import uuid4
 
 import boto3
@@ -17,7 +18,7 @@ def lambda_handler(event, context):
     """
     Create payment Lambda function
     """
-    trace_id = context.request_id
+    trace_id = context.aws_request_id
     logger.info(json.dumps({"event": event, "traceId": trace_id}))
 
     try:
@@ -39,7 +40,7 @@ def lambda_handler(event, context):
             "paymentMode": body["paymentMode"],
             "paymentType": body["paymentType"],
             "provider": body["provider"],
-            "amount": body["amount"],
+            "amount": Decimal(str(body["amount"])),
             "currency": body["currency"],
             "sourceKey": body["sourceKey"],
             "createdAt": timestamp,
