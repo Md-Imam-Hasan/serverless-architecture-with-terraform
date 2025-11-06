@@ -2,6 +2,12 @@ variable "region" {
   description = "region for all environments"
   default     = "ap-southeast-1"
 }
+
+variable "aws_role_arn" {
+  description = "Role to assume for deploying resources"
+  type        = string
+}
+
 variable "environment" {
   type        = string
   default     = "dev"
