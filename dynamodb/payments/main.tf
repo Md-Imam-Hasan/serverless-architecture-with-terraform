@@ -1,8 +1,8 @@
 resource "aws_dynamodb_table" "payments" {
-  name           = "${var.environment}_payments"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "PK"
-  range_key      = "SK"
+  name         = "${var.environment}_payments"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
 
   attribute {
     name = "PK"

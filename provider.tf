@@ -3,8 +3,8 @@ provider "aws" {
 
   default_tags {
     tags = {
-      "Terraform" = "true"
-      "Name" = "payment-service"
+      "Terraform"   = "true"
+      "Name"        = "payment-service"
       "Environment" = var.environment
     }
   }

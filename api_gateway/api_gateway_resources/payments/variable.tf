@@ -15,11 +15,9 @@ variable "request_body_validator_id" {
 }
 
 variable "create_payment_lambda_name" {
-  type    = string
-  default = ""
+  type = string
 }
 
 variable "create_payment_lambda_invoke_arn" {
-  type    = string
-  default = ""
+  type = string
 }
