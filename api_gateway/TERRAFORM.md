@@ -22,6 +22,7 @@ No requirements.
 | Name | Type |
 |------|------|
 | [aws_api_gateway_account.payment_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_account) | resource |
+| [aws_api_gateway_api_key.payment_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_api_key) | resource |
 | [aws_api_gateway_deployment.api_gateway_deployment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_deployment) | resource |
 | [aws_api_gateway_method_settings.all](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_method_settings) | resource |
 | [aws_api_gateway_request_validator.RequestBody](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_request_validator) | resource |
@@ -29,6 +30,7 @@ No requirements.
 | [aws_api_gateway_rest_api.api_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_rest_api) | resource |
 | [aws_api_gateway_stage.api_gateway_stage](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_stage) | resource |
 | [aws_api_gateway_usage_plan.payment_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_usage_plan) | resource |
+| [aws_api_gateway_usage_plan_key.payment_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_usage_plan_key) | resource |
 | [aws_iam_role.cloudwatch_payment_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.cloudwatch_payment_service](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 
@@ -45,6 +47,8 @@ No requirements.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_api_gateway_api_key_id"></a> [api\_gateway\_api\_key\_id](#output\_api\_gateway\_api\_key\_id) | The ID of the API Gateway API key |
+| <a name="output_api_gateway_api_key_value"></a> [api\_gateway\_api\_key\_value](#output\_api\_gateway\_api\_key\_value) | The value of the API Gateway API key |
 | <a name="output_api_gateway_deployment_id"></a> [api\_gateway\_deployment\_id](#output\_api\_gateway\_deployment\_id) | The ID of the API Gateway deployment |
 | <a name="output_api_gateway_execution_arn"></a> [api\_gateway\_execution\_arn](#output\_api\_gateway\_execution\_arn) | The execution ARN of the API Gateway |
 | <a name="output_api_gateway_id"></a> [api\_gateway\_id](#output\_api\_gateway\_id) | The ID of the API Gateway REST API |

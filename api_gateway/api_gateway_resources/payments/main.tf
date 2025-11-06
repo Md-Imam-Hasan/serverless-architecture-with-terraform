@@ -10,7 +10,7 @@ resource "aws_api_gateway_method" "payments_post_method" {
   resource_id          = aws_api_gateway_resource.payments_resource.id
   http_method          = "POST"
   authorization        = "NONE"
-  api_key_required     = false
+  api_key_required     = true
   request_validator_id = var.request_body_validator_id
 
   depends_on = [aws_api_gateway_resource.payments_resource]
@@ -45,6 +45,7 @@ module "cors" {
   allow_headers = [
     "Authorization",
     "Content-Type",
+    "X-Api-Key",
   ]
   allow_methods = [
     "OPTIONS",
