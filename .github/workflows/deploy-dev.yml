@@ -1,0 +1,46 @@
+name: Terraform Cloud Trigger
+
+on:
+  push:
+    branches:
+    - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Trigger Terraform Cloud Run
+      env:
+        TFC_TOKEN: ${{ secrets.TF_API_TOKEN }}
+        WORKSPACE_ID: ${{ secrets.TFC_WORKSPACE_ID }}
+      run: |
+        echo "Triggering Terraform Cloud run..."
+        RUN_ID=$(curl -s \
+          --header "Authorization: Bearer $TFC_TOKEN" \
+          --header "Content-Type: application/vnd.api+json" \
+          --request POST \
+          --data '{
+            "data": {
+              "attributes": { "message": "Triggered from GitHub Actions", "is-destroy": false },
+              "type": "runs",
+              "relationships": {
+                "workspace": { "data": { "type": "workspaces", "id": "'"$WORKSPACE_ID"'" } }
+              }
+            }
+          }' \
+          https://app.terraform.io/api/v2/runs | jq -r '.data.id')
+
+        echo "Run ID: $RUN_ID"
+
+        echo "Fetching logs from Terraform Cloud..."
+        until curl -s \
+          --header "Authorization: Bearer $TFC_TOKEN" \
+          https://app.terraform.io/api/v2/runs/$RUN_ID | grep -q '"status":"applied"'; do
+          echo "Waiting for run to complete..."
+          sleep 15
+        done
+
+        echo "✅ Terraform run completed!"
