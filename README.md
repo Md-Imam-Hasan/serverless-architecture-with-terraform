@@ -8,10 +8,12 @@ This service provides payment processing functionality using AWS serverless arch
 
 ## Architecture
 
-- **API Gateway**: REST API endpoints for payment operations
+- **API Gateway**: REST API endpoints with API key authentication
 - **Lambda Functions**: Serverless compute for payment processing
 - **DynamoDB**: NoSQL database for payment records
 - **Terraform**: Infrastructure as Code for AWS resources
+- **Terraform Cloud**: Remote execution and state management with AWS OIDC
+- **GitHub Actions**: CI/CD trigger for Terraform Cloud runs
 
 ## Features
 
@@ -19,17 +21,53 @@ This service provides payment processing functionality using AWS serverless arch
 - Process payments
 - Webhook handling for payment events
 - Secure payment data storage
+- API key authentication
+- Automated deployments via GitHub Actions
 
 ## Prerequisites
 
 - AWS Account with appropriate permissions
-- Terraform >= 1.0
+- Terraform Cloud account and workspace configured with:
+  - AWS OIDC provider for authentication
+  - Remote execution mode enabled
+  - AWS credentials configured in workspace
+- GitHub repository
+- Terraform >= 1.5.0 (for local development)
 - Python 3.11+
-- AWS CLI configured
+
+## GitHub Secrets Required
+
+Configure these secrets in your GitHub repository (Settings → Secrets and variables → Actions):
+
+- `TF_API_TOKEN` - Terraform Cloud API token
+- `TFC_WORKSPACE_ID` - Terraform Cloud workspace ID
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Configure Terraform Cloud
+
+1. Create a Terraform Cloud workspace
+2. Set execution mode to **Remote**
+3. Configure AWS OIDC authentication in workspace
+4. Set workspace variables:
+   - `environment` = `dev`
+   - `region` = `ap-southeast-1`
+
+### 2. Configure GitHub Secrets
+
+Add the following secrets to your GitHub repository:
+- `TF_API_TOKEN` - Your Terraform Cloud API token
+- `TFC_WORKSPACE_ID` - Your workspace ID (found in workspace settings)
+
+### 3. Deploy Infrastructure
+
+Push to the `dev` branch to trigger automatic deployment via Terraform Cloud:
+
+```bash
+git push origin dev
+```
+
+### 4. Local Development (Optional)
 
 ```bash
 # Install pre-commit hooks
@@ -38,25 +76,12 @@ pre-commit install
 
 # Install Terraform tools
 curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-```
 
-### 2. Configure AWS Credentials
-
-```bash
-aws configure
-```
-
-### 3. Deploy Infrastructure
-
-```bash
 # Initialize Terraform
 terraform init
 
-# Plan deployment
+# Plan changes (executed remotely in Terraform Cloud)
 terraform plan
-
-# Apply changes
-terraform apply
 ```
 
 ## Project Structure
