@@ -1,4 +1,4 @@
-# Payment Service
+# Payment Service On AWS Serverless Architecture
 
 AWS-based payment service infrastructure using Terraform, Lambda, API Gateway, and DynamoDB.
 
@@ -33,7 +33,7 @@ This service provides payment processing functionality using AWS serverless arch
   - AWS credentials configured in workspace
 - GitHub repository
 - Terraform >= 1.5.0 (for local development)
-- Python 3.11+
+- Go 1.21+
 
 ## GitHub Secrets Required
 
@@ -74,6 +74,11 @@ git push origin dev
 pip install pre-commit
 pre-commit install
 
+# Install Go (if not already installed)
+wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+
 # Install Terraform tools
 curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
 
@@ -108,12 +113,11 @@ This project uses Git pre-commit hooks to ensure code quality and consistent com
 
 #### Automated Checks
 
-**Python:**
-- Black (code formatting)
-- Flake8 (style guide enforcement)
-- isort (import sorting)
-- Pylint (code analysis)
-- Bandit (security scanning)
+**Go:**
+- gofmt (code formatting)
+- go vet (static analysis)
+- go-mod-tidy (dependency management)
+- golangci-lint (comprehensive linting)
 
 **Terraform:**
 - terraform fmt (formatting)
@@ -151,6 +155,14 @@ docs: update README
 pip install pre-commit
 pre-commit install
 
+# Install Go (if not already installed)
+wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+
+# Install golangci-lint
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+
 # Install Terraform tools
 # TFLint
 curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
@@ -162,8 +174,10 @@ chmod +x terraform-docs
 sudo mv terraform-docs /usr/local/bin/
 rm terraform-docs.tar.gz
 
-# Verifyd
+# Verify
 pre-commit --version
+go version
+golangci-lint --version
 terraform-docs --version
 tflint --version
 ```
@@ -184,7 +198,6 @@ git commit --no-verify -m "your message"
 #### Configuration Files
 
 - `.pre-commit-config.yaml` - Pre-commit hooks configuration
-- `pyproject.toml` - Python tools configuration
 - `.tflint.hcl` - Terraform linting rules
 - `.git/hooks/commit-msg` - Commit message validator
 

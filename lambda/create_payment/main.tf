@@ -1,18 +1,33 @@
+# Build the Go Lambda binary
+resource "null_resource" "build_lambda" {
+  triggers = {
+    source_hash = filemd5("${path.module}/src/main.go")
+  }
+
+  provisioner "local-exec" {
+    command     = "make build"
+    working_dir = path.module
+  }
+}
+
 data "archive_file" "create_payment_lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/src"
+  source_file = "${path.module}/src/bootstrap"
   output_path = "${path.module}/lambda_function.zip"
+
+  depends_on = [null_resource.build_lambda]
 }
 
 resource "aws_lambda_function" "create_payment" {
   filename         = data.archive_file.create_payment_lambda_zip.output_path
   function_name    = "${var.environment}_create_payment"
   role             = aws_iam_role.create_payment_lambda_role.arn
-  handler          = "lambda_function.lambda_handler"
+  handler          = "bootstrap"
   source_code_hash = data.archive_file.create_payment_lambda_zip.output_base64sha256
-  runtime          = "python3.11"
+  runtime          = "provided.al2023"
   timeout          = 30
   memory_size      = 256
+  architectures    = ["arm64"]
 
   environment {
     variables = {

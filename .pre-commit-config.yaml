@@ -22,43 +22,32 @@ repos:
   - id: detect-private-key
   - id: mixed-line-ending
 
-  # Python linting and formatting
-- repo: https://github.com/psf/black
-  rev: 23.12.1
+  # Go linting and formatting
+- repo: https://github.com/dnephin/pre-commit-golang
+  rev: v0.5.1
   hooks:
-  - id: black
-    language_version: python3
-    exclude: ^venv/|^\.terraform/
+  - id: go-fmt
 
-- repo: https://github.com/pycqa/flake8
-  rev: 7.0.0
+- repo: local
   hooks:
-  - id: flake8
-    args: [--max-line-length=88, '--extend-ignore=E203,W503']
-    exclude: ^venv/|^\.terraform/
-
-- repo: https://github.com/pycqa/isort
-  rev: 5.13.2
-  hooks:
-  - id: isort
-    args: [--profile, black]
-    exclude: ^venv/|^\.terraform/
-
-- repo: https://github.com/PyCQA/pylint
-  rev: v3.0.3
-  hooks:
-  - id: pylint
-    args: [--max-line-length=88, '--disable=C0114,C0115,C0116,E0401,W0718']
-    exclude: ^venv/|^\.terraform/
-
-  # Python security checks
-- repo: https://github.com/PyCQA/bandit
-  rev: 1.7.6
-  hooks:
-  - id: bandit
-    args: [-c, pyproject.toml]
-    additional_dependencies: ['bandit[toml]']
-    exclude: ^venv/|^\.terraform/|test_
+  - id: go-vet
+    name: go vet
+    entry: bash -c 'cd lambda/create_payment/src && go vet ./...'
+    language: system
+    files: \.go$
+    pass_filenames: false
+  - id: go-mod-tidy
+    name: go mod tidy
+    entry: bash -c 'cd lambda/create_payment/src && go mod tidy'
+    language: system
+    files: \.go$
+    pass_filenames: false
+  - id: golangci-lint
+    name: golangci-lint
+    entry: bash -c 'export PATH=$PATH:$(go env GOPATH)/bin && cd lambda/create_payment/src && golangci-lint run --timeout=5m'
+    language: system
+    files: \.go$
+    pass_filenames: false
 
   # Terraform formatting and validation
 - repo: https://github.com/antonbabenko/pre-commit-terraform
@@ -66,11 +55,6 @@ repos:
   hooks:
   - id: terraform_fmt
   - id: terraform_validate
-  - id: terraform_docs
-    args:
-    - --hook-config=--path-to-file=TERRAFORM.md
-    - --hook-config=--add-to-existing-file=true
-    - --hook-config=--create-file-if-not-exist=true
   - id: terraform_tflint
     args:
     - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
