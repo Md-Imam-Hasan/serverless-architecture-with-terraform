@@ -1,4 +1,4 @@
-name: Terraform Cloud Trigger
+name: Build and Deploy to Terraform Cloud
 
 on:
   push:
@@ -6,11 +6,39 @@ on:
     - dev
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache-dependency-path: lambda/create_payment/src/go.sum
+
+    - name: Build Lambda Binary
+      run: |
+        echo "Building Go Lambda binary..."
+        cd lambda/create_payment
+        make build
+        ls -lh src/bootstrap
+        file src/bootstrap
+
+    - name: Commit Built Binary
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add lambda/create_payment/src/bootstrap
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "chore: build Lambda binary [skip ci]"
+          git push origin dev
+        fi
 
     - name: Trigger Terraform Cloud Run
       env:

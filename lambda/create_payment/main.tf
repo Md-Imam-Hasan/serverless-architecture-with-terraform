@@ -1,28 +1,10 @@
-# Build the Go Lambda binary
-resource "null_resource" "build_lambda" {
-  triggers = {
-    # Comprehensive hash that includes all source files and dependencies
-    # This ensures rebuild whenever ANY relevant file changes
-    source_files = sha256(join("", [
-      filemd5("${path.module}/src/main.go"),
-      filemd5("${path.module}/src/go.mod"),
-      filemd5("${path.module}/src/go.sum"),
-      filemd5("${path.module}/Makefile")
-    ]))
-  }
-
-  provisioner "local-exec" {
-    command     = "make build"
-    working_dir = path.module
-  }
-}
+# The Go Lambda binary is built by GitHub Actions before Terraform runs
+# See: .github/workflows/deploy-dev.yml
 
 data "archive_file" "create_payment_lambda_zip" {
   type        = "zip"
   source_file = "${path.module}/src/bootstrap"
   output_path = "${path.module}/lambda_function.zip"
-
-  depends_on = [null_resource.build_lambda]
 }
 
 resource "aws_lambda_function" "create_payment" {

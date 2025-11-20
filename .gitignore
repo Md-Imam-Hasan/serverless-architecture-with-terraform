@@ -36,7 +36,7 @@ crash.*.log
 *.out
 go.work
 vendor/
-bootstrap
+# Note: bootstrap binary is committed for Lambda deployment
 
 # Pre-commit
 .pre-commit-cache/
