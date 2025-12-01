@@ -10,7 +10,7 @@ build-amd64:
 
 # Clean build artifacts
 clean:
-	rm -f bootstrap
+	rm -f src/bootstrap
 
 # Run tests
 test:

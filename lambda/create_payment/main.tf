@@ -1,7 +1,14 @@
 # Build the Go Lambda binary
 resource "null_resource" "build_lambda" {
   triggers = {
-    source_hash = filemd5("${path.module}/src/main.go")
+    # Comprehensive hash that includes all source files and dependencies
+    # This ensures rebuild whenever ANY relevant file changes
+    source_files = sha256(join("", [
+      filemd5("${path.module}/src/main.go"),
+      filemd5("${path.module}/src/go.mod"),
+      filemd5("${path.module}/src/go.sum"),
+      filemd5("${path.module}/Makefile")
+    ]))
   }
 
   provisioner "local-exec" {
