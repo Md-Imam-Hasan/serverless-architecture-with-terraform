@@ -26,15 +26,17 @@ builds/*
 crash.log
 crash.*.log
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
+# Go
+*.exe
+*.exe~
+*.dll
 *.so
-.Python
-*.egg-info/
-dist/
-build/
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+bootstrap
 
 # Pre-commit
 .pre-commit-cache/
