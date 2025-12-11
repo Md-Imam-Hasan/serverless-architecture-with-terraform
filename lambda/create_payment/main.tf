@@ -12,7 +12,7 @@ resource "aws_lambda_function" "create_payment" {
   function_name    = "${var.environment}_create_payment"
   role             = aws_iam_role.create_payment_lambda_role.arn
   handler          = "bootstrap"
-  source_code_hash = data.archive_file.create_payment_lambda_zip.output_base64sha256
+  source_code_hash = fileexists("${path.module}/src/bootstrap") ? filesha256("${path.module}/src/bootstrap") : filesha256("${path.module}/lambda_function.zip")
   runtime          = "provided.al2023"
   timeout          = 30
   memory_size      = 256
