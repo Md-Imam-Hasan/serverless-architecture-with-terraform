@@ -32,16 +32,23 @@ jobs:
         file src/bootstrap
 
     - name: Commit Built Binary
+      id: commit
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add lambda/create_payment/src/bootstrap
         if git diff --staged --quiet; then
           echo "No changes to commit"
+          echo "changed=false" >> $GITHUB_OUTPUT
         else
           git commit -m "chore: build Lambda binary [skip ci]"
           git push origin dev
+          echo "changed=true" >> $GITHUB_OUTPUT
         fi
+
+    - name: Wait for Git sync
+      if: steps.commit.outputs.changed == 'true'
+      run: sleep 10
 
     - name: Trigger Terraform Cloud Run
       env:
