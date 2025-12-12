@@ -138,11 +138,6 @@ type CompanyKeyset struct {
 	WebhookSecret  string `json:"webhook_secret"`
 }
 
-type CompanyConfig struct {
-	BaseURL    string `json:"base_url"`
-	SuccessAPI string `json:"success_api"`
-}
-
 // Internal types for processing
 type immediatePayment struct {
 	record      *PaymentRecord
@@ -463,23 +458,8 @@ func getCompanyKeyset(ctx context.Context, companyName string) (*CompanyKeyset, 
 	return &keyset, nil
 }
 
-func getCompanyConfig(ctx context.Context, companyName string) (*CompanyConfig, error) {
-	paramPath := fmt.Sprintf("/payment-service/%s/companies/%s/config", environment, companyName)
-
-	result, err := ssmClient.GetParameter(ctx, &ssm.GetParameterInput{
-		Name:           aws.String(paramPath),
-		WithDecryption: aws.Bool(false),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get company config: %w", err)
-	}
-
-	var cfg CompanyConfig
-	if err := json.Unmarshal([]byte(*result.Parameter.Value), &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse company config: %w", err)
-	}
-
-	return &cfg, nil
+func getCompanySuccessURL(companyName string) string {
+	return fmt.Sprintf("https://%s/api/payment/success", companyName)
 }
 
 func generateStripeLinks(ctx context.Context, payments []immediatePayment, companyName, sourceKey, traceID string) []PaymentResult {
@@ -507,13 +487,10 @@ func generateStripeLinks(ctx context.Context, payments []immediatePayment, compa
 			continue
 		}
 
-		// Get redirect URL from config if not provided
+		// Get redirect URL from company name if not provided
 		if redirectURL == nil || *redirectURL == "" {
-			cfg, err := getCompanyConfig(ctx, companyName)
-			if err == nil {
-				url := cfg.BaseURL + cfg.SuccessAPI
-				redirectURL = &url
-			}
+			url := getCompanySuccessURL(companyName)
+			redirectURL = &url
 		}
 
 		// Generate Stripe payment link

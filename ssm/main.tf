@@ -24,20 +24,6 @@ resource "aws_iam_policy" "ssm_read_policy" {
         Resource = [
           "arn:aws:ssm:${var.region}:${var.account_id}:parameter/payment-service/${var.environment}/*"
         ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt"
-        ]
-        Resource = [
-          var.kms_key_arn != "" ? var.kms_key_arn : "arn:aws:kms:${var.region}:${var.account_id}:key/*"
-        ]
-        Condition = {
-          StringEquals = {
-            "kms:ViaService" = "ssm.${var.region}.amazonaws.com"
-          }
-        }
       }
     ]
   })
@@ -52,25 +38,6 @@ resource "aws_ssm_parameter" "example_company_stripe_keys" {
     secret_key      = "sk_test_REPLACE_ME"
     publishable_key = "pk_test_REPLACE_ME"
     webhook_secret  = "whsec_REPLACE_ME"
-  })
-
-  tags = {
-    Environment = var.environment
-    Service     = "payment-service"
-  }
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "aws_ssm_parameter" "example_company_config" {
-  name        = "/payment-service/${var.environment}/companies/example_company/config"
-  description = "Configuration for example_company"
-  type        = "String"
-  value = jsonencode({
-    base_url    = "https://example.com"
-    success_api = "/api/payment/success"
   })
 
   tags = {

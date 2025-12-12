@@ -84,4 +84,6 @@ module "api_gateway" {
   api_acm_arn                      = ""
   create_payment_lambda_name       = module.create_payment_lambda.lambda_function_name
   create_payment_lambda_invoke_arn = module.create_payment_lambda.lambda_invoke_arn
+  stripe_webhook_lambda_name       = module.stripe_webhook_lambda.lambda_function_name
+  stripe_webhook_lambda_invoke_arn = module.stripe_webhook_lambda.lambda_invoke_arn
 }

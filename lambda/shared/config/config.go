@@ -11,12 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
 
-// CompanyConfig holds company-specific configuration
-type CompanyConfig struct {
-	BaseURL    string `json:"base_url"`
-	SuccessAPI string `json:"success_api"`
-}
-
 // CompanyKeyset holds company Stripe credentials from Parameter Store
 type CompanyKeyset struct {
 	SecretKey      string `json:"secret_key"`
@@ -78,20 +72,8 @@ func GetCompanyKeyset(ctx context.Context, environment, companyName string) (*Co
 	return &keyset, nil
 }
 
-// GetCompanyConfig retrieves company configuration from Parameter Store
-// Parameters are stored at: /payment-service/{env}/companies/{company_name}/config
-func GetCompanyConfig(ctx context.Context, environment, companyName string) (*CompanyConfig, error) {
-	paramPath := fmt.Sprintf("/payment-service/%s/companies/%s/config", environment, companyName)
-
-	value, err := GetParameter(ctx, paramPath, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get company config for %s: %w", companyName, err)
-	}
-
-	var cfg CompanyConfig
-	if err := json.Unmarshal([]byte(value), &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse company config: %w", err)
-	}
-
-	return &cfg, nil
+// GetCompanySuccessURL builds the success redirect URL for a company
+// URL format: https://{company_name}/api/payment/success
+func GetCompanySuccessURL(companyName string) string {
+	return fmt.Sprintf("https://%s/api/payment/success", companyName)
 }

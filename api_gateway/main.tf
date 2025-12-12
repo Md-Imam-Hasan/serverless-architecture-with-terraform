@@ -70,11 +70,23 @@ module "payments" {
   depends_on                       = [aws_api_gateway_rest_api.api_gateway]
 }
 
+# Webhook API Resources (public endpoints)
+module "webhook" {
+  source                           = "./api_gateway_resources/webhook"
+  api_gateway_id                   = aws_api_gateway_rest_api.api_gateway.id
+  api_gateway_root_resource_id     = aws_api_gateway_rest_api.api_gateway.root_resource_id
+  api_gateway_execution_arn        = aws_api_gateway_rest_api.api_gateway.execution_arn
+  stripe_webhook_lambda_name       = var.stripe_webhook_lambda_name
+  stripe_webhook_lambda_invoke_arn = var.stripe_webhook_lambda_invoke_arn
+  depends_on                       = [aws_api_gateway_rest_api.api_gateway]
+}
+
 resource "aws_api_gateway_deployment" "api_gateway_deployment" {
   rest_api_id = aws_api_gateway_rest_api.api_gateway.id
 
   depends_on = [
     module.payments,
+    module.webhook,
   ]
 
   triggers = {

@@ -19,36 +19,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	ebtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
-	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/paymentlink"
 	"github.com/stripe/stripe-go/v76/webhook"
+
+	sharedconfig "github.com/payment-service/shared/config"
+	"github.com/payment-service/shared/enums"
 )
 
 // ============================================================================
 // TYPES AND CONSTANTS
 // ============================================================================
 
-type PaymentStatus string
-
-const (
-	PaymentStatusLinkGenerated PaymentStatus = "link_generated"
-	PaymentStatusProcessing    PaymentStatus = "processing"
-	PaymentStatusPaid          PaymentStatus = "paid"
-	PaymentStatusFailed        PaymentStatus = "failed"
-	PaymentStatusCanceled      PaymentStatus = "canceled"
-	PaymentStatusRefunded      PaymentStatus = "refunded"
-)
-
-type EventType string
-
-const (
-	EventTypePaymentIntentSucceeded  EventType = "payment_intent.succeeded"
-	EventTypePaymentIntentFailed     EventType = "payment_intent.payment_failed"
-	EventTypePaymentIntentCanceled   EventType = "payment_intent.canceled"
-	EventTypePaymentIntentProcessing EventType = "payment_intent.processing"
-	EventTypeChargeRefunded          EventType = "charge.refunded"
-)
+// Using enums from shared module
 
 type PaymentRecord struct {
 	PK                string  `dynamodbav:"PK"`
@@ -63,11 +46,7 @@ type PaymentRecord struct {
 	ProviderPaymentID *string `dynamodbav:"providerPaymentId,omitempty"`
 }
 
-type CompanyKeyset struct {
-	SecretKey      string `json:"secret_key"`
-	PublishableKey string `json:"publishable_key"`
-	WebhookSecret  string `json:"webhook_secret"`
-}
+// Using CompanyKeyset from shared/config module
 
 type ErrorResponse struct {
 	Error   string                 `json:"error"`
@@ -89,7 +68,6 @@ type SuccessResponse struct {
 var (
 	dynamoClient      *dynamodb.Client
 	eventBridgeClient *eventbridge.Client
-	ssmClient         *ssm.Client
 	tableName         string
 	eventBusName      string
 	environment       string
@@ -121,7 +99,6 @@ func initClients() {
 
 		dynamoClient = dynamodb.NewFromConfig(cfg)
 		eventBridgeClient = eventbridge.NewFromConfig(cfg)
-		ssmClient = ssm.NewFromConfig(cfg)
 	})
 }
 
@@ -155,23 +132,8 @@ func successResponse(statusCode int, data interface{}) events.APIGatewayProxyRes
 // VALIDATION FUNCTIONS
 // ============================================================================
 
-func getCompanyKeyset(ctx context.Context, companyName string) (*CompanyKeyset, error) {
-	paramPath := fmt.Sprintf("/payment-service/%s/companies/%s/stripe_keys", environment, companyName)
-
-	result, err := ssmClient.GetParameter(ctx, &ssm.GetParameterInput{
-		Name:           aws.String(paramPath),
-		WithDecryption: aws.Bool(true),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get company keyset: %w", err)
-	}
-
-	var keyset CompanyKeyset
-	if err := json.Unmarshal([]byte(*result.Parameter.Value), &keyset); err != nil {
-		return nil, fmt.Errorf("failed to parse company keyset: %w", err)
-	}
-
-	return &keyset, nil
+func getCompanyKeyset(ctx context.Context, companyName string) (*sharedconfig.CompanyKeyset, error) {
+	return sharedconfig.GetCompanyKeyset(ctx, environment, companyName)
 }
 
 func getPayment(ctx context.Context, paymentID string) (*PaymentRecord, error) {
@@ -327,12 +289,12 @@ func handlePaymentIntentSucceeded(ctx context.Context, paymentIntent map[string]
 	}
 
 	// Idempotency check
-	if payment.Status == string(PaymentStatusPaid) {
-		return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusPaid)}, nil
+	if payment.Status == string(enums.PaymentStatusPaid) {
+		return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusPaid)}, nil
 	}
 
 	// Allowed source statuses
-	allowedStatuses := []string{string(PaymentStatusProcessing), string(PaymentStatusLinkGenerated)}
+	allowedStatuses := []string{string(enums.PaymentStatusProcessing), string(enums.PaymentStatusLinkGenerated)}
 
 	amountReceived, _ := paymentIntent["amount_received"].(float64)
 	providerPaymentID, _ := paymentIntent["id"].(string)
@@ -343,7 +305,7 @@ func handlePaymentIntentSucceeded(ctx context.Context, paymentIntent map[string]
 		"amountReceived":    amountReceived / 100,
 	}
 
-	if err := updatePaymentStatus(ctx, paymentID, string(PaymentStatusPaid), additionalFields, allowedStatuses); err != nil {
+	if err := updatePaymentStatus(ctx, paymentID, string(enums.PaymentStatusPaid), additionalFields, allowedStatuses); err != nil {
 		log.Printf(`{"error": "Failed to update payment status", "details": "%s", "paymentId": "%s", "traceId": "%s"}`,
 			err.Error(), paymentID, traceID)
 	}
@@ -365,9 +327,9 @@ func handlePaymentIntentSucceeded(ctx context.Context, paymentIntent map[string]
 
 	// Refresh payment and publish event
 	payment, _ = getPayment(ctx, paymentID)
-	_ = publishPaymentStatusEvent(ctx, payment, string(EventTypePaymentIntentSucceeded), additionalFields)
+	_ = publishPaymentStatusEvent(ctx, payment, string(enums.EventTypePaymentIntentSucceeded), additionalFields)
 
-	return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusPaid)}, nil
+	return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusPaid)}, nil
 }
 
 func handlePaymentIntentFailed(ctx context.Context, paymentIntent map[string]interface{}, traceID string) (map[string]string, error) {
@@ -385,16 +347,16 @@ func handlePaymentIntentFailed(ctx context.Context, paymentIntent map[string]int
 	}
 
 	// Idempotency check
-	if payment.Status == string(PaymentStatusFailed) {
-		return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusFailed)}, nil
+	if payment.Status == string(enums.PaymentStatusFailed) {
+		return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusFailed)}, nil
 	}
 
 	// Protected statuses
-	if payment.Status == string(PaymentStatusPaid) || payment.Status == string(PaymentStatusRefunded) {
+	if payment.Status == string(enums.PaymentStatusPaid) || payment.Status == string(enums.PaymentStatusRefunded) {
 		return map[string]string{"paymentId": paymentID, "status": payment.Status}, nil
 	}
 
-	allowedStatuses := []string{string(PaymentStatusProcessing), string(PaymentStatusLinkGenerated), "created"}
+	allowedStatuses := []string{string(enums.PaymentStatusProcessing), string(enums.PaymentStatusLinkGenerated), "created"}
 
 	lastPaymentError, _ := paymentIntent["last_payment_error"].(map[string]interface{})
 	failureMessage, _ := lastPaymentError["message"].(string)
@@ -408,15 +370,15 @@ func handlePaymentIntentFailed(ctx context.Context, paymentIntent map[string]int
 		"failureMessage":    failureMessage,
 	}
 
-	if err := updatePaymentStatus(ctx, paymentID, string(PaymentStatusFailed), additionalFields, allowedStatuses); err != nil {
+	if err := updatePaymentStatus(ctx, paymentID, string(enums.PaymentStatusFailed), additionalFields, allowedStatuses); err != nil {
 		log.Printf(`{"error": "Failed to update payment status", "details": "%s", "paymentId": "%s", "traceId": "%s"}`,
 			err.Error(), paymentID, traceID)
 	}
 
 	payment, _ = getPayment(ctx, paymentID)
-	_ = publishPaymentStatusEvent(ctx, payment, string(EventTypePaymentIntentFailed), additionalFields)
+	_ = publishPaymentStatusEvent(ctx, payment, string(enums.EventTypePaymentIntentFailed), additionalFields)
 
-	return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusFailed)}, nil
+	return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusFailed)}, nil
 }
 
 func handlePaymentIntentCanceled(ctx context.Context, paymentIntent map[string]interface{}, traceID string) (map[string]string, error) {
@@ -433,31 +395,31 @@ func handlePaymentIntentCanceled(ctx context.Context, paymentIntent map[string]i
 	}
 
 	// Idempotency check
-	if payment.Status == string(PaymentStatusCanceled) {
-		return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusCanceled)}, nil
+	if payment.Status == string(enums.PaymentStatusCanceled) {
+		return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusCanceled)}, nil
 	}
 
 	// Protected statuses
-	if payment.Status == string(PaymentStatusPaid) || payment.Status == string(PaymentStatusRefunded) {
+	if payment.Status == string(enums.PaymentStatusPaid) || payment.Status == string(enums.PaymentStatusRefunded) {
 		return map[string]string{"paymentId": paymentID, "status": payment.Status}, nil
 	}
 
-	allowedStatuses := []string{"created", string(PaymentStatusLinkGenerated), string(PaymentStatusProcessing), string(PaymentStatusFailed)}
+	allowedStatuses := []string{"created", string(enums.PaymentStatusLinkGenerated), string(enums.PaymentStatusProcessing), string(enums.PaymentStatusFailed)}
 
 	providerPaymentID, _ := paymentIntent["id"].(string)
 	additionalFields := map[string]interface{}{
 		"providerPaymentId": providerPaymentID,
 	}
 
-	if err := updatePaymentStatus(ctx, paymentID, string(PaymentStatusCanceled), additionalFields, allowedStatuses); err != nil {
+	if err := updatePaymentStatus(ctx, paymentID, string(enums.PaymentStatusCanceled), additionalFields, allowedStatuses); err != nil {
 		log.Printf(`{"error": "Failed to update payment status", "details": "%s", "paymentId": "%s", "traceId": "%s"}`,
 			err.Error(), paymentID, traceID)
 	}
 
 	payment, _ = getPayment(ctx, paymentID)
-	_ = publishPaymentStatusEvent(ctx, payment, string(EventTypePaymentIntentCanceled), additionalFields)
+	_ = publishPaymentStatusEvent(ctx, payment, string(enums.EventTypePaymentIntentCanceled), additionalFields)
 
-	return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusCanceled)}, nil
+	return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusCanceled)}, nil
 }
 
 func handlePaymentIntentProcessing(ctx context.Context, paymentIntent map[string]interface{}, traceID string) (map[string]string, error) {
@@ -474,34 +436,34 @@ func handlePaymentIntentProcessing(ctx context.Context, paymentIntent map[string
 	}
 
 	// Idempotency check
-	if payment.Status == string(PaymentStatusProcessing) {
-		return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusProcessing)}, nil
+	if payment.Status == string(enums.PaymentStatusProcessing) {
+		return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusProcessing)}, nil
 	}
 
 	// Protected statuses
-	protectedStatuses := []string{string(PaymentStatusPaid), string(PaymentStatusRefunded), string(PaymentStatusCanceled), string(PaymentStatusFailed)}
+	protectedStatuses := []string{string(enums.PaymentStatusPaid), string(enums.PaymentStatusRefunded), string(enums.PaymentStatusCanceled), string(enums.PaymentStatusFailed)}
 	for _, s := range protectedStatuses {
 		if payment.Status == s {
 			return map[string]string{"paymentId": paymentID, "status": payment.Status}, nil
 		}
 	}
 
-	allowedStatuses := []string{string(PaymentStatusLinkGenerated), "created"}
+	allowedStatuses := []string{string(enums.PaymentStatusLinkGenerated), "created"}
 
 	providerPaymentID, _ := paymentIntent["id"].(string)
 	additionalFields := map[string]interface{}{
 		"providerPaymentId": providerPaymentID,
 	}
 
-	if err := updatePaymentStatus(ctx, paymentID, string(PaymentStatusProcessing), additionalFields, allowedStatuses); err != nil {
+	if err := updatePaymentStatus(ctx, paymentID, string(enums.PaymentStatusProcessing), additionalFields, allowedStatuses); err != nil {
 		log.Printf(`{"error": "Failed to update payment status", "details": "%s", "paymentId": "%s", "traceId": "%s"}`,
 			err.Error(), paymentID, traceID)
 	}
 
 	payment, _ = getPayment(ctx, paymentID)
-	_ = publishPaymentStatusEvent(ctx, payment, string(EventTypePaymentIntentProcessing), additionalFields)
+	_ = publishPaymentStatusEvent(ctx, payment, string(enums.EventTypePaymentIntentProcessing), additionalFields)
 
-	return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusProcessing)}, nil
+	return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusProcessing)}, nil
 }
 
 func handleChargeRefunded(ctx context.Context, charge map[string]interface{}, traceID string) (map[string]string, error) {
@@ -518,12 +480,12 @@ func handleChargeRefunded(ctx context.Context, charge map[string]interface{}, tr
 	}
 
 	// Idempotency check
-	if payment.Status == string(PaymentStatusRefunded) {
-		return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusRefunded)}, nil
+	if payment.Status == string(enums.PaymentStatusRefunded) {
+		return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusRefunded)}, nil
 	}
 
 	// Only allow refund from paid status
-	allowedStatuses := []string{string(PaymentStatusPaid)}
+	allowedStatuses := []string{string(enums.PaymentStatusPaid)}
 
 	// Extract refund info
 	var refundID, refundStatus string
@@ -557,15 +519,15 @@ func handleChargeRefunded(ctx context.Context, charge map[string]interface{}, tr
 		additionalFields["refundId"] = refundID
 	}
 
-	if err := updatePaymentStatus(ctx, paymentID, string(PaymentStatusRefunded), additionalFields, allowedStatuses); err != nil {
+	if err := updatePaymentStatus(ctx, paymentID, string(enums.PaymentStatusRefunded), additionalFields, allowedStatuses); err != nil {
 		log.Printf(`{"error": "Failed to update payment status", "details": "%s", "paymentId": "%s", "traceId": "%s"}`,
 			err.Error(), paymentID, traceID)
 	}
 
 	payment, _ = getPayment(ctx, paymentID)
-	_ = publishPaymentStatusEvent(ctx, payment, string(EventTypeChargeRefunded), additionalFields)
+	_ = publishPaymentStatusEvent(ctx, payment, string(enums.EventTypeChargeRefunded), additionalFields)
 
-	return map[string]string{"paymentId": paymentID, "status": string(PaymentStatusRefunded)}, nil
+	return map[string]string{"paymentId": paymentID, "status": string(enums.PaymentStatusRefunded)}, nil
 }
 
 // ============================================================================

@@ -14,6 +14,8 @@ require (
 	github.com/stripe/stripe-go/v76 v76.25.0
 )
 
+replace github.com/payment-service/shared => ../../shared
+
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.47 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.21 // indirect

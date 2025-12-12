@@ -9,9 +9,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.20
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.38.0
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.36.0
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.56.0
+	github.com/payment-service/shared v0.0.0
 	github.com/stripe/stripe-go/v76 v76.25.0
 )
+
+replace github.com/payment-service/shared => ../../shared
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.47 // indirect
@@ -24,6 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.56.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.2 // indirect

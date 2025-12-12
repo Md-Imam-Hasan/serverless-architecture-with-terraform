@@ -14,3 +14,11 @@ variable "create_payment_lambda_name" {
 variable "create_payment_lambda_invoke_arn" {
   type = string
 }
+
+variable "stripe_webhook_lambda_name" {
+  type = string
+}
+
+variable "stripe_webhook_lambda_invoke_arn" {
+  type = string
+}
