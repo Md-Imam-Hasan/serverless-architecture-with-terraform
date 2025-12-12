@@ -44,7 +44,8 @@ variable "ssm_read_policy_arn" {
   description = "ARN of the SSM read policy"
 }
 
-variable "state_machine_arn" {
+variable "event_bus_name" {
   type        = string
-  description = "ARN of the Step Functions state machine"
+  description = "Name of the EventBridge event bus"
+  default     = "default"
 }

@@ -36,7 +36,9 @@ crash.*.log
 *.out
 go.work
 vendor/
-# Note: bootstrap binary is committed for Lambda deployment
+# Lambda bootstrap binary (uploaded to S3 by CI)
+lambda/create_payment/src/bootstrap
+lambda/create_payment/src/lambda.zip
 
 # Pre-commit
 .pre-commit-cache/

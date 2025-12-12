@@ -5,8 +5,13 @@ on:
     branches:
     - dev
 
+env:
+  AWS_REGION: ap-southeast-1
+  LAMBDA_ARTIFACTS_BUCKET: dev-lambda-artifacts-776724785158
+
 permissions:
-  contents: write
+  id-token: write
+  contents: read
 
 jobs:
   build-and-deploy:
@@ -14,41 +19,22 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
-        cache-dependency-path: lambda/create_payment/src/go.sum
 
-    - name: Build Lambda Binary
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Build and Upload Lambda Functions
       run: |
-        echo "Building Go Lambda binary..."
-        cd lambda/create_payment
-        make build
-        ls -lh src/bootstrap
-        file src/bootstrap
-
-    - name: Commit Built Binary
-      id: commit
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add lambda/create_payment/src/bootstrap
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-          echo "changed=false" >> $GITHUB_OUTPUT
-        else
-          git commit -m "chore: build Lambda binary [skip ci]"
-          git push origin dev
-          echo "changed=true" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Wait for Git sync
-      if: steps.commit.outputs.changed == 'true'
-      run: sleep 10
+        chmod +x scripts/build-and-upload-lambdas.sh
+        ./scripts/build-and-upload-lambdas.sh
 
     - name: Trigger Terraform Cloud Run
       env:
@@ -62,7 +48,7 @@ jobs:
           --request POST \
           --data '{
             "data": {
-              "attributes": { "message": "Triggered from GitHub Actions", "is-destroy": false },
+              "attributes": { "message": "Deploy Go Lambda from GitHub Actions", "is-destroy": false },
               "type": "runs",
               "relationships": {
                 "workspace": { "data": { "type": "workspaces", "id": "'"$WORKSPACE_ID"'" } }
@@ -73,7 +59,7 @@ jobs:
 
         echo "Run ID: $RUN_ID"
 
-        echo "Fetching logs from Terraform Cloud..."
+        echo "Waiting for Terraform run to complete..."
         until curl -s \
           --header "Authorization: Bearer $TFC_TOKEN" \
           https://app.terraform.io/api/v2/runs/$RUN_ID | grep -q '"status":"applied"'; do
@@ -81,4 +67,4 @@ jobs:
           sleep 15
         done
 
-        echo "✅ Terraform run completed!"
+        echo "Terraform run completed!"

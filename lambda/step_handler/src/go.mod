@@ -1,4 +1,4 @@
-module create-payment
+module step-handler
 
 go 1.21
 
@@ -8,9 +8,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.28.6
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.20
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.38.0
-	github.com/aws/aws-sdk-go-v2/service/sfn v1.34.0
+	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.36.0
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.56.0
-	github.com/google/uuid v1.6.0
 	github.com/stripe/stripe-go/v76 v76.25.0
 )
 
@@ -20,6 +19,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.25 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.25 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.25 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.6 // indirect

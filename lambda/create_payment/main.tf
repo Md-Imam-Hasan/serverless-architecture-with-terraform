@@ -1,20 +1,15 @@
-# The Go Lambda binary is built by GitHub Actions before Terraform runs
+# The Go Lambda binary is built by GitHub Actions and uploaded to S3
 # See: .github/workflows/deploy-dev.yml
 
-data "archive_file" "create_payment_lambda_zip" {
-  type        = "zip"
-  source_file = "${path.module}/src/bootstrap"
-  output_path = "${path.module}/lambda_function.zip"
-}
-
 resource "aws_lambda_function" "create_payment" {
-  filename         = data.archive_file.create_payment_lambda_zip.output_path
+  s3_bucket        = var.lambda_artifacts_bucket
+  s3_key           = var.lambda_artifacts_key
   function_name    = "${var.environment}_create_payment"
   role             = aws_iam_role.create_payment_lambda_role.arn
   handler          = "bootstrap"
-  source_code_hash = data.archive_file.create_payment_lambda_zip.output_base64sha256
+  source_code_hash = var.lambda_source_code_hash
   runtime          = "provided.al2023"
-  timeout          = 30
+  timeout          = 60
   memory_size      = 256
   architectures    = ["arm64"]
 
@@ -23,6 +18,7 @@ resource "aws_lambda_function" "create_payment" {
       ENVIRONMENT         = var.environment
       LOG_LEVEL           = "INFO"
       PAYMENTS_TABLE_NAME = var.payments_table_name
+      STATE_MACHINE_ARN   = var.state_machine_arn
     }
   }
 
@@ -68,11 +64,39 @@ resource "aws_iam_role_policy" "create_payment_dynamodb_policy" {
           "dynamodb:GetItem",
           "dynamodb:UpdateItem",
           "dynamodb:Query",
-          "dynamodb:Scan"
+          "dynamodb:Scan",
+          "dynamodb:TransactWriteItems"
         ]
         Resource = [
           var.payments_table_arn,
           "${var.payments_table_arn}/index/*"
+        ]
+      }
+    ]
+  })
+}
+
+# SSM Parameter Store policy
+resource "aws_iam_role_policy_attachment" "create_payment_ssm_policy" {
+  policy_arn = var.ssm_read_policy_arn
+  role       = aws_iam_role.create_payment_lambda_role.name
+}
+
+# Step Functions policy
+resource "aws_iam_role_policy" "create_payment_step_functions_policy" {
+  name = "${var.environment}_create_payment_step_functions_policy"
+  role = aws_iam_role.create_payment_lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "states:StartExecution"
+        ]
+        Resource = [
+          var.state_machine_arn
         ]
       }
     ]
