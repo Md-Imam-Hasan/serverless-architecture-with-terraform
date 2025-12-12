@@ -90,6 +90,7 @@ type PaymentRecord struct {
 	SK                string  `dynamodbav:"SK"`
 	PaymentID         string  `dynamodbav:"paymentId"`
 	OrderNumber       string  `dynamodbav:"orderNumber"`
+	CompanyID         string  `dynamodbav:"companyId"` // GSI hash key
 	CompanyName       string  `dynamodbav:"companyName"`
 	Status            string  `dynamodbav:"status"`
 	PaymentMode       string  `dynamodbav:"paymentMode"`
@@ -280,6 +281,7 @@ func buildPaymentRecords(orders []Order, companyName, sourceKey string, paymentM
 			SK:          "METADATA",
 			PaymentID:   paymentID,
 			OrderNumber: order.OrderNumber,
+			CompanyID:   companyName, // GSI hash key
 			CompanyName: companyName,
 			Status:      status,
 			PaymentMode: string(paymentMode),
