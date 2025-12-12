@@ -21,10 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/google/uuid"
-	"github.com/stripe/stripe-go/v76"
-	"github.com/stripe/stripe-go/v76/paymentlink"
-	"github.com/stripe/stripe-go/v76/price"
-	"github.com/stripe/stripe-go/v76/product"
+	sharedstripe "github.com/payment-service/shared/stripe"
 )
 
 // ============================================================================
@@ -495,18 +492,22 @@ func generateStripeLinks(ctx context.Context, payments []immediatePayment, compa
 			redirectURL = &url
 		}
 
-		// Generate Stripe payment link
-		stripeResult, err := createStripePaymentLink(
-			record.PaymentID,
-			companyName,
-			record.Amount,
-			record.Currency,
-			fmt.Sprintf("Payment for order %s", record.OrderNumber),
-			keyset.SecretKey,
-			sourceKey,
-			redirectURL,
-			map[string]string{"orderNumber": record.OrderNumber},
-		)
+		// Generate Stripe payment link using shared package
+		redirectURLStr := ""
+		if redirectURL != nil {
+			redirectURLStr = *redirectURL
+		}
+		stripeResult, err := sharedstripe.CreatePaymentLink(&sharedstripe.CreatePaymentLinkParams{
+			PaymentID:          record.PaymentID,
+			CompanyName:        companyName,
+			Amount:             record.Amount,
+			Currency:           record.Currency,
+			Description:        fmt.Sprintf("Payment for order %s", record.OrderNumber),
+			StripeSecretKey:    keyset.SecretKey,
+			SourceKey:          sourceKey,
+			RedirectURL:        redirectURLStr,
+			AdditionalMetadata: map[string]string{"orderNumber": record.OrderNumber},
+		})
 		if err != nil {
 			log.Printf(`{"error": "Error generating payment link", "details": "%s", "paymentId": "%s", "traceId": "%s"}`,
 				err.Error(), record.PaymentID, traceID)
@@ -518,107 +519,24 @@ func generateStripeLinks(ctx context.Context, payments []immediatePayment, compa
 
 		// Update payment record with Stripe link info
 		err = updatePaymentStatus(ctx, record.PaymentID, string(PaymentStatusLinkGenerated), map[string]interface{}{
-			"paymentLink":       stripeResult.paymentLink,
-			"paymentLinkId":     stripeResult.paymentLinkID,
-			"providerPaymentId": stripeResult.providerPaymentID,
+			"paymentLink":       stripeResult.PaymentLink,
+			"paymentLinkId":     stripeResult.PaymentLinkID,
+			"providerPaymentId": stripeResult.ProviderPaymentID,
 		})
 		if err != nil {
 			log.Printf(`{"error": "Failed to update payment status", "details": "%s", "paymentId": "%s", "traceId": "%s"}`,
 				err.Error(), record.PaymentID, traceID)
 		}
 
-		result.PaymentLink = &stripeResult.paymentLink
-		result.PaymentLinkID = &stripeResult.paymentLinkID
-		result.ProviderPaymentID = &stripeResult.providerPaymentID
+		result.PaymentLink = &stripeResult.PaymentLink
+		result.PaymentLinkID = &stripeResult.PaymentLinkID
+		result.ProviderPaymentID = &stripeResult.ProviderPaymentID
 		result.Message = "Payment link generated successfully"
 		result.Status = string(PaymentStatusLinkGenerated)
 		results = append(results, result)
 	}
 
 	return results
-}
-
-type stripeResult struct {
-	paymentLink       string
-	paymentLinkID     string
-	providerPaymentID string
-}
-
-func createStripePaymentLink(paymentID, companyName string, amount int, currency, description, secretKey, sourceKey string, redirectURL *string, metadata map[string]string) (*stripeResult, error) {
-	stripe.Key = secretKey
-
-	// Create product
-	productParams := &stripe.ProductParams{
-		Name: stripe.String(description),
-	}
-	productParams.AddMetadata("paymentId", paymentID)
-	productParams.AddMetadata("companyName", companyName)
-	productParams.AddMetadata("sourceKey", sourceKey)
-	for k, v := range metadata {
-		productParams.AddMetadata(k, v)
-	}
-
-	prod, err := product.New(productParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create product: %w", err)
-	}
-
-	// Create price
-	priceParams := &stripe.PriceParams{
-		Product:    stripe.String(prod.ID),
-		UnitAmount: stripe.Int64(int64(amount)),
-		Currency:   stripe.String(currency),
-	}
-
-	pr, err := price.New(priceParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create price: %w", err)
-	}
-
-	// Create payment link
-	linkParams := &stripe.PaymentLinkParams{
-		LineItems: []*stripe.PaymentLinkLineItemParams{
-			{
-				Price:    stripe.String(pr.ID),
-				Quantity: stripe.Int64(1),
-			},
-		},
-	}
-
-	if redirectURL != nil && *redirectURL != "" {
-		linkParams.AfterCompletion = &stripe.PaymentLinkAfterCompletionParams{
-			Type: stripe.String("redirect"),
-			Redirect: &stripe.PaymentLinkAfterCompletionRedirectParams{
-				URL: stripe.String(*redirectURL),
-			},
-		}
-	}
-
-	linkParams.AddMetadata("paymentId", paymentID)
-	linkParams.AddMetadata("companyName", companyName)
-	linkParams.AddMetadata("sourceKey", sourceKey)
-	for k, v := range metadata {
-		linkParams.AddMetadata(k, v)
-	}
-
-	linkParams.PaymentIntentData = &stripe.PaymentLinkPaymentIntentDataParams{}
-	linkParams.PaymentIntentData.AddMetadata("paymentId", paymentID)
-	linkParams.PaymentIntentData.AddMetadata("companyName", companyName)
-	linkParams.PaymentIntentData.AddMetadata("sourceKey", sourceKey)
-	for k, v := range metadata {
-		linkParams.PaymentIntentData.AddMetadata(k, v)
-	}
-
-	link, err := paymentlink.New(linkParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create payment link: %w", err)
-	}
-
-	return &stripeResult{
-		paymentLink:       link.URL,
-		paymentLinkID:     link.ID,
-		providerPaymentID: prod.ID,
-	}, nil
 }
 
 // ============================================================================

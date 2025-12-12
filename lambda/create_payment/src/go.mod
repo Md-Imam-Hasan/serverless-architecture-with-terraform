@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sfn v1.34.0
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.56.0
 	github.com/google/uuid v1.6.0
-	github.com/stripe/stripe-go/v76 v76.25.0
+	github.com/payment-service/shared v0.0.0-00010101000000-000000000000
 )
 
 replace github.com/payment-service/shared => ../../shared
@@ -31,4 +31,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.2 // indirect
 	github.com/aws/smithy-go v1.22.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/stripe/stripe-go/v76 v76.25.0 // indirect
 )

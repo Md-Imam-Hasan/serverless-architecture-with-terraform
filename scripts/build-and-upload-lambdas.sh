@@ -5,7 +5,6 @@ set -e
 S3_BUCKET="${LAMBDA_ARTIFACTS_BUCKET:-dev-lambda-artifacts-776724785158}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-BUILD_ALL="${BUILD_ALL:-false}"
 
 # Lambda directories and S3 keys
 declare -A LAMBDAS=(
@@ -14,50 +13,15 @@ declare -A LAMBDAS=(
     ["stripe_webhook"]="stripe_webhook/lambda.zip"
 )
 
-# Detect changed lambdas
-get_changed_lambdas() {
-    local changed=()
-
-    # Get changed files compared to previous commit
-    local changed_files
-    changed_files=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-
-    # Also check for changes in shared code
-    local shared_changed=false
-    if echo "$changed_files" | grep -q "^lambda/shared/"; then
-        shared_changed=true
-    fi
-
-    for lambda_name in "${!LAMBDAS[@]}"; do
-        # Check if this lambda's code changed or shared code changed
-        if echo "$changed_files" | grep -q "^lambda/$lambda_name/" || [ "$shared_changed" = true ]; then
-            changed+=("$lambda_name")
-        fi
-    done
-
-    echo "${changed[@]}"
-}
-
 echo "=========================================="
 echo "Building and Uploading Lambda Functions"
 echo "=========================================="
 echo "S3 Bucket: $S3_BUCKET"
 echo ""
 
-# Determine which lambdas to build
-if [ "$BUILD_ALL" = "true" ]; then
-    LAMBDAS_TO_BUILD=("${!LAMBDAS[@]}")
-    echo "Mode: Building ALL lambdas (BUILD_ALL=true)"
-else
-    read -ra LAMBDAS_TO_BUILD <<< "$(get_changed_lambdas)"
-    if [ ${#LAMBDAS_TO_BUILD[@]} -eq 0 ]; then
-        echo "No lambda changes detected. Nothing to build."
-        echo "Set BUILD_ALL=true to force build all lambdas."
-        exit 0
-    fi
-    echo "Mode: Building CHANGED lambdas only"
-    echo "Changed: ${LAMBDAS_TO_BUILD[*]}"
-fi
+# Build all lambdas
+LAMBDAS_TO_BUILD=("${!LAMBDAS[@]}")
+echo "Building: ${LAMBDAS_TO_BUILD[*]}"
 echo ""
 
 # Build and upload each Lambda

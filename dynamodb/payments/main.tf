@@ -14,23 +14,6 @@ resource "aws_dynamodb_table" "payments" {
     type = "S"
   }
 
-  attribute {
-    name = "companyId"
-    type = "S"
-  }
-
-  attribute {
-    name = "createdAt"
-    type = "S"
-  }
-
-  global_secondary_index {
-    name            = "CompanyPaymentsIndex"
-    hash_key        = "companyId"
-    range_key       = "createdAt"
-    projection_type = "ALL"
-  }
-
   ttl {
     attribute_name = "ttl"
     enabled        = true
